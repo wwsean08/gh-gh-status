@@ -1,24 +1,31 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/wwsean08/gh-status/status"
+	"log"
 )
 
-var cfgFile string
-
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gh-status",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Check the status of github.com",
+	Long: `A simple command to get the current status of github.com according th githubstatus.com 
+with the ability to poll it every minute to keep an eye on ongoing incidents.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		client := status.NewClient()
+		status, err := client.Poll()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if status != nil {
+			s, _ := json.Marshal(status)
+			fmt.Printf("success: \n%s\n", s)
+		} else {
+			log.Fatal("status is nil")
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -28,13 +35,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gh-status.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().BoolP("watch", "w", false, "Check for a status update every minute")
 }
