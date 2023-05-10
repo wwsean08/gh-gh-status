@@ -37,7 +37,13 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 					if component.Status == "operational" {
 						componentSB.WriteString(pterm.Green(pterm.Sprintf("%s - Operational\n", component.Component)))
 					} else if component.Status == "partial_outage" {
-						componentSB.WriteString(pterm.Yellow(pterm.Sprintf("%s - Degraded\n", component.Component)))
+						componentSB.WriteString(pterm.Yellow(pterm.Sprintf("%s - Partial Outage\n", component.Component)))
+					} else if component.Status == "major_outage" {
+						componentSB.WriteString(pterm.Red(pterm.Sprintf("%s - Major Outage\n", component.Component)))
+					} else if component.Status == "degraded_performance" {
+						componentSB.WriteString(pterm.LightYellow(pterm.Sprintf("%s - Degraded Performance\n", component.Component)))
+					} else {
+						componentSB.WriteString(pterm.Sprintf("%s - %s\n", component.Component, component.Status))
 					}
 				}
 
