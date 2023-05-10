@@ -51,7 +51,7 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 				incidents := status.Incidents
 				if len(incidents) > 0 {
 					for _, incident := range incidents[0].IncidentUpdates {
-						incidentsSB.WriteString(fmt.Sprintf("Updated At %s - %s\n", incident.Timestamp.Local().Format(time.DateTime), incident.Update))
+						incidentsSB.WriteString(fmt.Sprintf("Updated %s - %s\n", incident.Timestamp.Local().Format(time.DateTime), incident.Update))
 					}
 					outputIncidents = true
 				} else {
