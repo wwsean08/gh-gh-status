@@ -1,11 +1,13 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/wwsean08/gh-status/status"
 	"log"
+	"strings"
+	"time"
 )
 
 var rootCmd = &cobra.Command{
@@ -14,17 +16,53 @@ var rootCmd = &cobra.Command{
 	Long: `A simple command to get the current status of github.com according th githubstatus.com 
 with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		area, _ := pterm.DefaultArea.WithFullscreen().Start()
 		client := status.NewClient()
-		status, err := client.Poll()
-		if err != nil {
-			log.Fatal(err)
+		outputComponentsBox := ""
+		outputIncidentsBox := ""
+		outputIncidents := false
+		for {
+			updateTime := pterm.DefaultBasicText.Sprintf(fmt.Sprintf("Last Updated %s\n", time.Now().Format(time.TimeOnly)))
+			status, err := client.Poll()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if status != nil {
+				components := status.Components
+				componentSB := strings.Builder{}
+				for _, component := range components {
+					if component.ID == IGNORE_GHSTATUS_COMPONENTID {
+						continue
+					}
+					if component.Status == "operational" {
+						componentSB.WriteString(pterm.Green(pterm.Sprintf("%s - Operational\n", component.Component)))
+					} else if component.Status == "partial_outage" {
+						componentSB.WriteString(pterm.Yellow(pterm.Sprintf("%s - Degraded\n", component.Component)))
+					}
+				}
+
+				incidentsSB := strings.Builder{}
+				incidents := status.Incidents
+				if len(incidents) > 0 {
+					for _, incident := range incidents[0].IncidentUpdates {
+						incidentsSB.WriteString(fmt.Sprintf("Updated At %s - %s\n", incident.Timestamp.Format(time.DateTime), incident.Update))
+					}
+					outputIncidents = true
+				} else {
+					outputIncidents = false
+				}
+				outputComponentsBox = pterm.DefaultBox.WithTitle("System Status").WithTitleTopCenter().Sprint(componentSB.String())
+				outputIncidentsBox = pterm.DefaultBox.WithTitle("Incident Updates").WithTitleTopCenter().Sprint(incidentsSB.String())
+			}
+			if outputIncidents {
+				area.Update(updateTime, outputComponentsBox, "\n\n", outputIncidentsBox)
+			} else {
+				area.Update(updateTime, outputComponentsBox)
+
+			}
+			time.Sleep(time.Minute)
 		}
-		if status != nil {
-			s, _ := json.Marshal(status)
-			fmt.Printf("success: \n%s\n", s)
-		} else {
-			log.Fatal("status is nil")
-		}
+		area.Stop()
 	},
 }
 
