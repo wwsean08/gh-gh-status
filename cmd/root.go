@@ -16,6 +16,10 @@ var rootCmd = &cobra.Command{
 	Long: `A simple command to get the current status of github.com according th githubstatus.com 
 with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		watch, err := cmd.Flags().GetBool("watch")
+		if err != nil {
+			log.Fatal(err)
+		}
 		area, _ := pterm.DefaultArea.WithFullscreen().Start()
 		client := status.NewClient()
 		outputComponentsBox := ""
@@ -65,6 +69,9 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 			} else {
 				area.Update(updateTime, outputComponentsBox)
 
+			}
+			if !watch {
+				break
 			}
 			time.Sleep(time.Minute)
 		}
