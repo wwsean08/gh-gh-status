@@ -20,7 +20,7 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 		if err != nil {
 			log.Fatal(err)
 		}
-		area, _ := pterm.DefaultArea.WithFullscreen().Start()
+		area, _ := pterm.DefaultArea.WithFullscreen(watch).Start()
 		client := status.NewClient()
 		outputComponentsBox := ""
 		outputIncidentsBox := ""
