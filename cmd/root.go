@@ -23,32 +23,32 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 		outputIncidents := false
 		for {
 			updateTime := pterm.DefaultBasicText.Sprintf(fmt.Sprintf("Last Updated %s\n", time.Now().Format(time.TimeOnly)))
-			status, err := client.Poll()
+			summary, err := client.Poll()
 			if err != nil {
 				log.Fatal(err)
 			}
-			if status != nil {
-				components := status.Components
+			if summary != nil {
+				components := summary.Components
 				componentSB := strings.Builder{}
 				for _, component := range components {
 					if component.ID == IGNORE_GHSTATUS_COMPONENTID {
 						continue
 					}
-					if component.Status == "operational" {
+					if component.Status == status.COMPONENT_OPERATIONAL {
 						componentSB.WriteString(pterm.Green(pterm.Sprintf("%s - Operational\n", component.Component)))
-					} else if component.Status == "partial_outage" {
-						componentSB.WriteString(pterm.Yellow(pterm.Sprintf("%s - Partial Outage\n", component.Component)))
-					} else if component.Status == "major_outage" {
-						componentSB.WriteString(pterm.Red(pterm.Sprintf("%s - Major Outage\n", component.Component)))
-					} else if component.Status == "degraded_performance" {
+					} else if component.Status == status.COMPONENT_DEGREDADED_PERFORMANCE {
 						componentSB.WriteString(pterm.LightYellow(pterm.Sprintf("%s - Degraded Performance\n", component.Component)))
+					} else if component.Status == status.COMPONENT_PARTIAL_OUTAGE {
+						componentSB.WriteString(pterm.Yellow(pterm.Sprintf("%s - Partial Outage\n", component.Component)))
+					} else if component.Status == status.COMPONENT_MAJOR_OUTAGE {
+						componentSB.WriteString(pterm.Red(pterm.Sprintf("%s - Major Outage\n", component.Component)))
 					} else {
 						componentSB.WriteString(pterm.Sprintf("%s - %s\n", component.Component, component.Status))
 					}
 				}
 
 				incidentsSB := strings.Builder{}
-				incidents := status.Incidents
+				incidents := summary.Incidents
 				if len(incidents) > 0 {
 					for _, incident := range incidents[0].IncidentUpdates {
 						incidentsSB.WriteString(fmt.Sprintf("Updated %s - %s\n", incident.Timestamp.Local().Format(time.DateTime), incident.Update))
