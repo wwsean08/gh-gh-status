@@ -12,6 +12,9 @@ builds:
       - windows
       - darwin
       - freebsd
+    ldflags:
+      -  -s -w
+      - -X github.com/wwsean08/gh-gh-status/status.Version={{.Version}}
 archives:
   - format: binary
     name_template: "{{ .Os }}-{{ .Arch }}"

@@ -58,7 +58,7 @@ func (c *Client) getData() (*http.Response, error) {
 	if c.etag != nil {
 		req.Header.Add("If-None-Match", *c.etag)
 	}
-
+	req.Header.Add("User-Agent", fmt.Sprintf("gh-status/%s", strings.TrimLeft(Version, "v")))
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
