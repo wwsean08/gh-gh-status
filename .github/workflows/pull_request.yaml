@@ -1,4 +1,4 @@
-name: Release
+name: Pull Request
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test:
-    name: Build and Release
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
