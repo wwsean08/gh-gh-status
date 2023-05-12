@@ -12,12 +12,14 @@ import (
 type Client struct {
 	etag   *string // etag to reduce API bandwidth usage
 	client *http.Client
+	apiURL string
 }
 
 func NewClient() *Client {
 	return &Client{
 		etag:   nil,
 		client: http.DefaultClient,
+		apiURL: "https://www.githubstatus.com/api/v2/summary.json",
 	}
 }
 
@@ -49,9 +51,8 @@ func (c *Client) Poll() (*SystemStatus, error) {
 }
 
 func (c *Client) getData() (*http.Response, error) {
-	url := "https://www.githubstatus.com/api/v2/summary.json"
 	reader := strings.Reader{}
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, &reader)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.apiURL, &reader)
 	if err != nil {
 		return nil, err
 	}
