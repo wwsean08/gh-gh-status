@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/wwsean08/gh-gh-status/status"
@@ -24,6 +25,7 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 		client := status.NewClient()
 		outputComponentsBox := ""
 		outputIncidentsBox := ""
+		incidentURL := ""
 		outputIncidents := false
 		for {
 			updateTime := pterm.DefaultBasicText.Sprintf(fmt.Sprintf("Last Updated %s\n", time.Now().Format(time.TimeOnly)))
@@ -50,12 +52,12 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 						componentSB.WriteString(pterm.Sprintf("%s - %s\n", component.Component, component.Status))
 					}
 				}
-
 				incidentsSB := strings.Builder{}
 				incidents := summary.Incidents
 				if len(incidents) > 0 {
+					incidentURL = fmt.Sprintf("https://www.githubstatus.com/incidents/%s", incidents[0].ID)
 					for _, incident := range incidents[0].IncidentUpdates {
-						incidentsSB.WriteString(fmt.Sprintf("Updated %s - %s\n", incident.Timestamp.Local().Format(time.DateTime), incident.Update))
+						incidentsSB.WriteString(wordwrap.WrapString(fmt.Sprintf("Updated %s - %s\n", incident.Timestamp.Local().Format(time.DateTime), incident.Update), 80))
 					}
 					outputIncidents = true
 				} else {
@@ -65,7 +67,7 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 				outputIncidentsBox = pterm.DefaultBox.WithTitle("Incident Updates").WithTitleTopCenter().Sprint(incidentsSB.String())
 			}
 			if outputIncidents {
-				area.Update(updateTime, outputComponentsBox, "\n\n", outputIncidentsBox)
+				area.Update(updateTime, outputComponentsBox, "\n", incidentURL, "\n", outputIncidentsBox)
 			} else {
 				area.Update(updateTime, outputComponentsBox)
 
