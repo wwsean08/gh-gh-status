@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/wwsean08/gh-gh-status/status"
-	"log"
-	"strings"
-	"time"
 )
 
 var rootCmd = &cobra.Command{
