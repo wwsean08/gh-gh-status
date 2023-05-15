@@ -1,10 +1,11 @@
 package status
 
 import (
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewClientReturnsClient(t *testing.T) {

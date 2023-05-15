@@ -1,9 +1,10 @@
 package status
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
 	datetime "time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestTime_UnmarshalJSON_ValidDate(t *testing.T) {

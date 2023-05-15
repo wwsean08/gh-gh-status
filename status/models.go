@@ -19,6 +19,7 @@ type Components struct {
 
 type Incidents struct {
 	Status          IncidentStatus   `json:"status"`
+	ID              string           `json:"id"`
 	IncidentUpdates []IncidentUpdate `json:"incident_updates"`
 }
 
