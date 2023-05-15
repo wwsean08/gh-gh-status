@@ -62,6 +62,7 @@ with the ability to poll it every minute to keep an eye on ongoing incidents.`,
 					}
 					outputIncidents = true
 				} else {
+					incidentURL = ""
 					outputIncidents = false
 				}
 				outputComponentsBox = pterm.DefaultBox.WithTitle("System Status").WithTitleTopCenter().Sprint(componentSB.String())
