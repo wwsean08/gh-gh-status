@@ -16,7 +16,11 @@ var rootCmd = &cobra.Command{
 	Use:   "gh-status",
 	Short: "Check the status of github.com",
 	Long: `A simple command to get the current status of github.com according th githubstatus.com 
-with the ability to poll it every minute to keep an eye on ongoing incidents.`,
+with the ability to poll it every minute to keep an eye on ongoing incidents.
+
+To upgrade the extension run the following command:
+gh extension upgrade gh-gh-status
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		watch, err := cmd.Flags().GetBool("watch")
 		if err != nil {
