@@ -32,11 +32,18 @@ gh extension upgrade gh-gh-status
 		outputIncidentsBox := ""
 		incidentURL := ""
 		outputIncidents := false
+		outputError := false
+
+		errMsg := ""
 		for {
 			updateTime := pterm.DefaultBasicText.Sprintf(fmt.Sprintf("Last Updated %s\n", time.Now().Format(time.TimeOnly)))
 			summary, err := client.Poll()
 			if err != nil {
-				log.Fatal(err)
+				errMsg = fmt.Sprintf("Error retrieving current GitHub status, if this is in watch mode, it will try again in 1 minute.\nError Message: %s", err.Error())
+				outputError = true
+			} else {
+				errMsg = ""
+				outputError = false
 			}
 			if summary != nil {
 				components := summary.Components
@@ -72,7 +79,9 @@ gh extension upgrade gh-gh-status
 				outputComponentsBox = pterm.DefaultBox.WithTitle("System Status").WithTitleTopCenter().Sprint(componentSB.String())
 				outputIncidentsBox = pterm.DefaultBox.WithTitle("Incident Updates").WithTitleTopCenter().Sprint(incidentsSB.String())
 			}
-			if outputIncidents {
+			if outputError {
+				area.Update(updateTime, errMsg)
+			} else if outputIncidents {
 				area.Update(updateTime, outputComponentsBox, "\n", incidentURL, "\n", outputIncidentsBox)
 			} else {
 				area.Update(updateTime, outputComponentsBox)
