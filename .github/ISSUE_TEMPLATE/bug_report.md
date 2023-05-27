@@ -1,6 +1,6 @@
 ---
 name: "\U0001F41B Bug report"
-about: Report a bug or unexpected behavior while using GitHub CLI
+about: Report a bug or unexpected behavior while using the extension
 title: ''
 labels: bug
 assignees: ''
@@ -9,7 +9,7 @@ assignees: ''
 
 ### Describe the bug
 
-A clear and concise description of what the bug is. Include version by typing `gh --version`.
+A clear and concise description of what the bug is.
 
 ### System Information
 OS: `Windows/Mac/Linux/FreeBSD`
