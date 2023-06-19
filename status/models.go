@@ -7,17 +7,17 @@ import (
 )
 
 type SystemStatus struct {
-	Components []Components `json:"components"`
-	Incidents  []Incidents  `json:"incidents"`
+	Components []Component `json:"components"`
+	Incidents  []Incident  `json:"incidents"`
 }
 
-type Components struct {
+type Component struct {
 	ID        string          `json:"id"`
 	Component string          `json:"name"`
 	Status    ComponentStatus `json:"status"`
 }
 
-type Incidents struct {
+type Incident struct {
 	Status          IncidentStatus   `json:"status"`
 	ID              string           `json:"id"`
 	IncidentUpdates []IncidentUpdate `json:"incident_updates"`
