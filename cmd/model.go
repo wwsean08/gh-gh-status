@@ -80,10 +80,3 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	return docStyle.Render(m.components.View())
 }
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
