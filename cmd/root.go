@@ -21,7 +21,7 @@ gh extension upgrade gh-gh-status
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		m := model{
-			components: list.New(nil, list.NewDefaultDelegate(), 0, 0),
+			components: list.New(nil, NewItemDelegator(), 0, 0),
 		}
 		p := tea.NewProgram(
 			m,
