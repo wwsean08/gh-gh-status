@@ -93,6 +93,8 @@ func runEventLoop(params eventLoopParams) {
 				return
 			}
 		case <-params.resizeChan:
+			// Clear the area to prevent artifacts from previous render
+			params.area.Clear()
 			// Re-render with existing data (no API poll needed)
 			output := renderUI(params.currentState.currentSummary, params.currentState.outputError, params.currentState.errMsg, params.currentState.lastUpdate)
 			params.area.Update(output)
