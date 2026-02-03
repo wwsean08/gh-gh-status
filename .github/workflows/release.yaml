@@ -9,6 +9,7 @@ on:
       - v*
 
 permissions:
+  id-token: write
   contents: write
   packages: write
   attestations: write
@@ -36,4 +37,3 @@ jobs:
       - uses: actions/attest-build-provenance@v3
         with:
           subject-checksums: ./dist/checksums.txt
-
