@@ -36,7 +36,7 @@ gh extension upgrade gh-gh-status
 
 		errMsg := ""
 		for {
-			updateTime := pterm.DefaultBasicText.Sprintf(fmt.Sprintf("Last Updated %s\n", time.Now().Format(time.TimeOnly)))
+			updateTime := pterm.DefaultBasicText.Sprintf("Last Updated %s \n", time.Now().Format(time.TimeOnly))
 			summary, err := client.Poll()
 			if err != nil {
 				errMsg = fmt.Sprintf("Error retrieving current GitHub status, if this is in watch mode, it will try again in 1 minute.\nError Message: %s", err.Error())
