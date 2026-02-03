@@ -44,7 +44,7 @@ func TestTime_MarshalJSON_Time(t *testing.T) {
 	require.NoError(t, err)
 	timeString, err := time.MarshalJSON()
 	require.NoError(t, err)
-	require.Equal(t, "\"2014-05-03 01:22:07\"", string(timeString))
+	require.Equal(t, "\"2014-05-03 1:22 AM\"", string(timeString))
 }
 
 func TestTime_MarshalJSON_Null(t *testing.T) {
