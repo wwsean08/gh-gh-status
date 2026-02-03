@@ -1,5 +1,7 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
+version: 2
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -9,19 +11,19 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
       - freebsd
+    goarch:
+      - amd64
+      - arm64
     ldflags:
       -  -s -w
       - -X github.com/wwsean08/gh-gh-status/status.Version={{.Version}}
 archives:
-  - format: binary
+  - formats: binary
     name_template: "{{ .Os }}-{{ .Arch }}"
 checksum:
   name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:
