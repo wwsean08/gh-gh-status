@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
   packages: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   build-and-release:
@@ -27,3 +29,8 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-checksums: ./dist/checksums.txt
+
