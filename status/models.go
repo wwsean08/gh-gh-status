@@ -40,7 +40,7 @@ func (t *Time) String() string {
 	if t.Time == nil {
 		return ""
 	}
-	return t.Time.Format(time.DateTime)
+	return t.Time.Format("2006-01-02 3:04 PM")
 }
 
 func (t *Time) UnmarshalJSON(b []byte) error {
