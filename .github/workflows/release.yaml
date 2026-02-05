@@ -10,7 +10,6 @@ permissions:
   contents: write
   packages: write
   attestations: write
-  artifact-metadata: write
 
 jobs:
   build-and-release:
