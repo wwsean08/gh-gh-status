@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/pterm/pterm"
@@ -16,6 +17,64 @@ import (
 	"github.com/wwsean08/gh-gh-status/status"
 	"golang.org/x/term"
 )
+
+// setNonCanonicalMode sets the terminal to non-canonical mode for reading
+// single characters without affecting output processing
+func setNonCanonicalMode(fd int) (*term.State, error) {
+	oldState, err := term.GetState(fd)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the raw terminal attributes
+	var termios syscall.Termios
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), syscall.TIOCGETA, uintptr(unsafe.Pointer(&termios))); errno != 0 {
+		return oldState, errno
+	}
+
+	// Modify only input flags - leave output flags untouched
+	// Disable canonical mode (ICANON) and echo (ECHO)
+	termios.Lflag &^= syscall.ICANON | syscall.ECHO | syscall.ECHOE | syscall.ECHOK | syscall.ECHONL
+	// Set minimum characters to read
+	termios.Cc[syscall.VMIN] = 1
+	termios.Cc[syscall.VTIME] = 0
+
+	// Apply the modified settings
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), syscall.TIOCSETA, uintptr(unsafe.Pointer(&termios))); errno != 0 {
+		return oldState, errno
+	}
+
+	return oldState, nil
+}
+
+// handleKeyboardInput listens for keyboard input and sends signals to appropriate channels
+// Note: Terminal must already be in non-canonical mode before calling this function
+func handleKeyboardInput(refreshChan chan bool, done chan bool) {
+	buf := make([]byte, 1)
+	for {
+		n, err := os.Stdin.Read(buf)
+		if err != nil || n == 0 {
+			continue
+		}
+
+		switch buf[0] {
+		case 'r', 'R':
+			// Manual refresh requested
+			select {
+			case refreshChan <- true:
+			default:
+				// Channel full, skip
+			}
+		case 'q', 'Q', 3: // 3 is Ctrl+C
+			// Quit requested
+			select {
+			case done <- true:
+			default:
+			}
+			return
+		}
+	}
+}
 
 // stripAnsiCodes removes ANSI color codes to get actual string length
 func stripAnsiCodes(s string) string {
@@ -40,6 +99,7 @@ type eventLoopParams struct {
 	sigChan      chan os.Signal
 	pollChan     chan bool
 	resizeChan   chan bool
+	refreshChan  chan bool
 	ticker       *time.Ticker
 	done         chan bool
 	currentState *eventLoopState
@@ -69,6 +129,11 @@ func runEventLoop(params eventLoopParams) {
 				// Time to poll for new data
 				params.pollChan <- true
 			}
+		case <-params.refreshChan:
+			// Manual refresh requested (in watch mode only)
+			if params.watch {
+				params.pollChan <- true
+			}
 		case <-params.pollChan:
 			// Poll for new data
 			summary, err := params.client.Poll()
@@ -78,14 +143,15 @@ func runEventLoop(params eventLoopParams) {
 			} else {
 				params.currentState.errMsg = ""
 				params.currentState.outputError = false
+				// Update last check time even if there's no new data (304 response)
+				params.currentState.lastUpdate = time.Now()
 			}
 			if summary != nil {
 				params.currentState.currentSummary = summary
-				params.currentState.lastUpdate = time.Now()
 			}
 
 			// Render UI with current data
-			output := renderUI(params.currentState.currentSummary, params.currentState.outputError, params.currentState.errMsg, params.currentState.lastUpdate)
+			output := renderUI(params.currentState.currentSummary, params.currentState.outputError, params.currentState.errMsg, params.currentState.lastUpdate, params.watch)
 			params.area.Update(output)
 
 			if !params.watch {
@@ -96,14 +162,14 @@ func runEventLoop(params eventLoopParams) {
 			// Clear the area to prevent artifacts from previous render
 			params.area.Clear()
 			// Re-render with existing data (no API poll needed)
-			output := renderUI(params.currentState.currentSummary, params.currentState.outputError, params.currentState.errMsg, params.currentState.lastUpdate)
+			output := renderUI(params.currentState.currentSummary, params.currentState.outputError, params.currentState.errMsg, params.currentState.lastUpdate, params.watch)
 			params.area.Update(output)
 		}
 	}
 }
 
 // renderUI generates the UI output based on current data and terminal dimensions
-func renderUI(summary *status.SystemStatus, outputError bool, errMsg string, lastUpdate time.Time) string {
+func renderUI(summary *status.SystemStatus, outputError bool, errMsg string, lastUpdate time.Time, watch bool) string {
 	// Get terminal dimensions
 	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
@@ -192,9 +258,24 @@ func renderUI(summary *status.SystemStatus, outputError bool, errMsg string, las
 
 	// Add padding to fill remaining terminal height
 	currentLines := strings.Count(output.String(), "\n") + 1
-	if currentLines < termHeight {
-		padding := strings.Repeat("\n", termHeight-currentLines)
-		output.WriteString(padding)
+	linesNeeded := termHeight - currentLines
+
+	if watch {
+		// In watch mode, add help text at bottom with blank line separator
+		// Calculate how much space we have: termHeight - currentLines - 1 (for help text)
+		linesNeeded -= 1
+		if linesNeeded > 0 {
+			// Add padding + blank line separator
+			output.WriteString(strings.Repeat("\n", linesNeeded))
+		}
+		// Add help text at the bottom (no trailing newline)
+		output.WriteString(pterm.Gray("Press 'r' to refresh, 'q' or Ctrl+C to quit"))
+	} else {
+		// Normal mode: fill to terminal height
+		if currentLines < termHeight {
+			padding := strings.Repeat("\n", linesNeeded)
+			output.WriteString(padding)
+		}
 	}
 
 	return output.String()
@@ -225,13 +306,17 @@ gh extension upgrade gh-gh-status
 			lastUpdate:     time.Now(),
 		}
 
-		// Set up signal handler for terminal resize
+		// Set up signal handler for terminal resize and interrupt
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGWINCH)
 
+		intChan := make(chan os.Signal, 1)
+		signal.Notify(intChan, os.Interrupt, syscall.SIGTERM)
+
 		// Channels for coordinating updates
-		pollChan := make(chan bool, 1)   // Channel for data polling
-		resizeChan := make(chan bool, 1) // Channel for resize events
+		pollChan := make(chan bool, 1)    // Channel for data polling
+		resizeChan := make(chan bool, 1)  // Channel for resize events
+		refreshChan := make(chan bool, 1) // Channel for manual refresh
 		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
 
@@ -239,7 +324,20 @@ gh extension upgrade gh-gh-status
 		pollChan <- true
 
 		// Main event loop
-		done := make(chan bool)
+		done := make(chan bool, 1)
+
+		// Set up terminal for keyboard input in watch mode
+		// Use non-canonical mode instead of full raw mode to preserve output processing
+		var oldTermState *term.State
+		if watch {
+			oldTermState, err = setNonCanonicalMode(int(os.Stdin.Fd()))
+			if err == nil {
+				defer term.Restore(int(os.Stdin.Fd()), oldTermState)
+				// Start keyboard input handler
+				go handleKeyboardInput(refreshChan, done)
+			}
+		}
+
 		params := eventLoopParams{
 			client:       client,
 			area:         area,
@@ -247,11 +345,18 @@ gh extension upgrade gh-gh-status
 			sigChan:      sigChan,
 			pollChan:     pollChan,
 			resizeChan:   resizeChan,
+			refreshChan:  refreshChan,
 			ticker:       ticker,
 			done:         done,
 			currentState: state,
 		}
 		go runEventLoop(params)
+
+		// Handle interrupt signal
+		go func() {
+			<-intChan
+			done <- true
+		}()
 
 		// Wait for completion
 		<-done

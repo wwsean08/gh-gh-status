@@ -214,7 +214,7 @@ func TestStripAnsiCodesIdempotent(t *testing.T) {
 func TestRenderUI_NilSummary(t *testing.T) {
 	// Test rendering with nil summary
 	lastUpdate := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
-	result := renderUI(nil, false, "", lastUpdate)
+	result := renderUI(nil, false, "", lastUpdate, false)
 
 	// Should contain last updated time
 	if !strings.Contains(result, "Last Updated") {
@@ -231,7 +231,7 @@ func TestRenderUI_WithError(t *testing.T) {
 	// Test rendering with error state
 	lastUpdate := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
 	errMsg := "Failed to fetch status"
-	result := renderUI(nil, true, errMsg, lastUpdate)
+	result := renderUI(nil, true, errMsg, lastUpdate, false)
 
 	// Should contain error message
 	if !strings.Contains(result, errMsg) {
@@ -263,7 +263,7 @@ func TestRenderUI_WithComponents(t *testing.T) {
 		Incidents: []status.Incidents{},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Should contain component names
 	if !strings.Contains(result, "Git Operations") {
@@ -306,7 +306,7 @@ func TestRenderUI_FilterIgnoredComponent(t *testing.T) {
 		Incidents: []status.Incidents{},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Should NOT contain ignored component
 	if strings.Contains(result, "Visit www.githubstatus.com") {
@@ -348,7 +348,7 @@ func TestRenderUI_AllComponentStatuses(t *testing.T) {
 		Incidents: []status.Incidents{},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Check all status types are rendered
 	statusChecks := map[string]string{
@@ -398,7 +398,7 @@ func TestRenderUI_WithIncidents(t *testing.T) {
 		},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Should contain incident URL
 	if !strings.Contains(result, "githubstatus.com/incidents/incident123") {
@@ -429,7 +429,7 @@ func TestRenderUI_EmptyComponents(t *testing.T) {
 		Incidents:  []status.Incidents{},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Should not crash and should contain basic elements
 	if !strings.Contains(result, "Last Updated") {
@@ -456,7 +456,7 @@ func TestRenderUI_ContainsNewlines(t *testing.T) {
 		Incidents: []status.Incidents{},
 	}
 
-	result := renderUI(summary, false, "", lastUpdate)
+	result := renderUI(summary, false, "", lastUpdate, false)
 
 	// Should contain multiple newlines for terminal height padding
 	newlineCount := strings.Count(result, "\n")
@@ -479,10 +479,40 @@ func TestRenderUI_ConsistentOutput(t *testing.T) {
 		Incidents: []status.Incidents{},
 	}
 
-	result1 := renderUI(summary, false, "", lastUpdate)
-	result2 := renderUI(summary, false, "", lastUpdate)
+	result1 := renderUI(summary, false, "", lastUpdate, false)
+	result2 := renderUI(summary, false, "", lastUpdate, false)
 
 	if result1 != result2 {
 		t.Error("renderUI should produce consistent output for same inputs")
+	}
+}
+
+func TestRenderUI_WatchModeHelpText(t *testing.T) {
+	// Test that watch mode includes help text at bottom
+	lastUpdate := time.Date(2024, 1, 15, 14, 30, 0, 0, time.UTC)
+	summary := &status.SystemStatus{
+		Components: []status.Components{
+			{
+				ID:        "comp1",
+				Component: "Test Component",
+				Status:    status.COMPONENT_OPERATIONAL,
+			},
+		},
+		Incidents: []status.Incidents{},
+	}
+
+	// Test without watch mode
+	resultNoWatch := renderUI(summary, false, "", lastUpdate, false)
+	if strings.Contains(resultNoWatch, "Press 'r' to refresh") {
+		t.Error("Expected no help text when watch mode is disabled")
+	}
+
+	// Test with watch mode
+	resultWatch := renderUI(summary, false, "", lastUpdate, true)
+	if !strings.Contains(resultWatch, "Press 'r' to refresh") {
+		t.Error("Expected help text to contain 'Press 'r' to refresh' in watch mode")
+	}
+	if !strings.Contains(resultWatch, "quit") {
+		t.Error("Expected help text to mention quit option in watch mode")
 	}
 }
