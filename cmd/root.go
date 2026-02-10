@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/pterm/pterm"
@@ -17,35 +16,6 @@ import (
 	"github.com/wwsean08/gh-gh-status/status"
 	"golang.org/x/term"
 )
-
-// setNonCanonicalMode sets the terminal to non-canonical mode for reading
-// single characters without affecting output processing
-func setNonCanonicalMode(fd int) (*term.State, error) {
-	oldState, err := term.GetState(fd)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the raw terminal attributes
-	var termios syscall.Termios
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), syscall.TIOCGETA, uintptr(unsafe.Pointer(&termios))); errno != 0 {
-		return oldState, errno
-	}
-
-	// Modify only input flags - leave output flags untouched
-	// Disable canonical mode (ICANON) and echo (ECHO)
-	termios.Lflag &^= syscall.ICANON | syscall.ECHO | syscall.ECHOE | syscall.ECHOK | syscall.ECHONL
-	// Set minimum characters to read
-	termios.Cc[syscall.VMIN] = 1
-	termios.Cc[syscall.VTIME] = 0
-
-	// Apply the modified settings
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), syscall.TIOCSETA, uintptr(unsafe.Pointer(&termios))); errno != 0 {
-		return oldState, errno
-	}
-
-	return oldState, nil
-}
 
 // handleKeyboardInput listens for keyboard input and sends signals to appropriate channels
 // Note: Terminal must already be in non-canonical mode before calling this function
