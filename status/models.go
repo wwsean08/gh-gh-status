@@ -1,7 +1,9 @@
 package status
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -31,6 +33,19 @@ type IncidentUpdate struct {
 
 type ComponentStatus string
 type IncidentStatus string
+
+var brTagRegex = regexp.MustCompile(`<br\s*/?>`)
+
+func (iu *IncidentUpdate) UnmarshalJSON(b []byte) error {
+	type Alias IncidentUpdate
+	var alias Alias
+	if err := json.Unmarshal(b, &alias); err != nil {
+		return err
+	}
+	alias.Update = brTagRegex.ReplaceAllString(alias.Update, " ")
+	*iu = IncidentUpdate(alias)
+	return nil
+}
 
 type Time struct {
 	*time.Time

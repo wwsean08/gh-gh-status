@@ -76,9 +76,10 @@ func handleKeyboardInput(refreshChan chan bool, done chan bool) {
 	}
 }
 
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
 // stripAnsiCodes removes ANSI color codes to get actual string length
 func stripAnsiCodes(s string) string {
-	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(s, "")
 }
 
